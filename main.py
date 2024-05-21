@@ -101,8 +101,8 @@ def find_connected_components(th_img_matrix: np.ndarray, conn_type: str) -> np.n
 
     current_label = 1
 
-    for row in range(1, rows-1):
-        for col in range(1, cols-1):
+    for row in range(1, rows):
+        for col in range(1, cols):
             if th_img_matrix_bord[row, col] == 1 and labels_bord[row, col] == 0:
                 labels_bord[row, col] = current_label
                 queue = [(row, col)]
