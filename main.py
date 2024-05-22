@@ -41,6 +41,20 @@ def save_processed_images(imagepath: str, titles: list, matrices: list):
         img.save(f'imagens_processadas/{imagepath}_{title}{imagepath_ext}')
 
 
+def find_center_of_mass_object_in_matrix(component_only_matrix: np.ndarray) -> tuple:
+    y_indices, x_indices = np.nonzero(component_only_matrix)
+
+    m00 = np.sum(component_only_matrix)
+
+    m10 = np.sum(x_indices)
+    m01 = np.sum(y_indices)
+
+    cmx = int(m10 / m00)
+    cmy = int(m01 / m00)
+
+    return (cmy, cmx)
+
+
 def get_connected_component(labeled_matrix: np.ndarray, selected_component: int) -> np.ndarray:
     apply_diff_sel = labeled_matrix != selected_component
     apply_eq_sel = labeled_matrix == selected_component
@@ -209,6 +223,15 @@ def main(args):
     component_only_matrix_cp = component_only_matrix.copy()
     component_only_matrix_cp[component_only_matrix == 1] = 255
     images_matrices_archive.append(component_only_matrix_cp)
+
+    # Acha o centro de massa do objeto
+    crow, ccol = find_center_of_mass_object_in_matrix(component_only_matrix)
+    print(f'Center Row = {crow}; Center Column = {ccol}')
+
+    # Identifica o centro do objeto colocando uma celula 0
+    component_with_center_matrix = component_only_matrix_cp.copy()
+    component_with_center_matrix[crow, ccol] = 0
+    images_matrices_archive.append(component_with_center_matrix)
 
     return imagepath, images_matrices_archive
 
