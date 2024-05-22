@@ -3,6 +3,7 @@
 
 # remove processed images folder
 imagens_processadas/
+imagens_extras/
 
 # remove comparison file
 para-comparacao/

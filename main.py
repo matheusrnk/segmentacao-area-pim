@@ -40,6 +40,10 @@ def save_processed_images(imagepath: str, titles: list, matrices: list):
         img = Image.fromarray(img_matrix)
         img.save(f'imagens_processadas/{imagepath}_{title}{imagepath_ext}')
 
+def show_center_of_mass(component_with_center_matrix: np.ndarray, crow: int, ccol: int):
+    plt.imshow(component_with_center_matrix, cmap='gray')
+    plt.title(f'Centro de Massa: Linha = {crow}, Coluna = {ccol}')
+    plt.scatter(ccol, crow, s=160, c='red', marker='+')
 
 def find_center_of_mass_object_in_matrix(component_only_matrix: np.ndarray) -> tuple:
     y_indices, x_indices = np.nonzero(component_only_matrix)
@@ -104,6 +108,11 @@ def deletes_connected_componentes_on_edges(labeled_matrix: np.ndarray) -> np.nda
 
     return labeled_matrix_wo_edges
 
+def show_colored_connected_components(labeled_matrix: np.ndarray):
+    plt.imshow(labeled_matrix, cmap='rainbow')
+    plt.colorbar(label='Rótulos')
+    plt.title('Mapa de Calor dos Rótulos')
+    plt.show()
 
 def find_connected_components(th_img_matrix: np.ndarray, conn_type: str) -> np.ndarray:
     rows, cols = th_img_matrix.shape
@@ -141,8 +150,20 @@ def find_connected_components(th_img_matrix: np.ndarray, conn_type: str) -> np.n
     # remove a borda de -1 para retornar só os labels
     return labels_bord[1:-1, 1:-1].copy()
 
+def show_histogram(img_matrix: np.ndarray, threshold: int):
+    hist = np.histogram(img_matrix, bins=256, range=(0, 256))
+    plt.figure(figsize=(10, 5))
+    plt.plot(hist[1][:-1], hist[0], color='black')
+    plt.axvline(threshold, color='red', linestyle='-')
+    plt.title('Histograma')
+    plt.xlabel('Níveis de Cinza')
+    plt.ylabel('Frequência')
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()
 
-def apply_threshold(img_matrix: np.ndarray) -> np.ndarray:
+
+def apply_threshold(img_matrix: np.ndarray) -> tuple:
     # se utilizar 3 classes, ele limpa mais. Porém, se perde algumas informações, oq pode ser
     # ruim para imagens diferentes.
     threshold = threshold_multiotsu(img_matrix, classes=2)[0]
@@ -151,7 +172,7 @@ def apply_threshold(img_matrix: np.ndarray) -> np.ndarray:
     new_th_image_matrix = img_matrix.copy()
     new_th_image_matrix[apply_lower_th] = 0
     new_th_image_matrix[apply_upper_th] = 1
-    return new_th_image_matrix
+    return new_th_image_matrix, threshold
 
 
 def gets_image_matrix(image: Image) -> np.ndarray:
@@ -161,7 +182,7 @@ def gets_image_matrix(image: Image) -> np.ndarray:
 def loads_image(imagepath: str) -> Image:
     try:
         image = Image.open(imagepath)
-        return image
+        return image.convert("L") # apenas garante que a imagem seja em tons de cinza
     except Exception as e:
         print(f'Houve um erro ao carregar a imagem {imagepath} - Erro: {e}')
         sys.exit(3)
@@ -197,7 +218,10 @@ def main(args):
     images_matrices_archive.append(img_matrix)
 
     # Aplicação do limiar
-    th_img_matrix = apply_threshold(img_matrix)
+    th_img_matrix, threshold = apply_threshold(img_matrix)
+
+    # Faz histograma e indica valor de threshold escolhido
+    show_histogram(img_matrix, threshold)
 
     # Guarda a matriz da imagem limiarizada (ou binarizada)
     th_img_matrix_cp = th_img_matrix.copy()
@@ -206,6 +230,10 @@ def main(args):
 
     # Busca pelos componentes conexos
     labeled_matrix = find_connected_components(th_img_matrix, 'c8')
+    print(f'Componentes encontrados = {labeled_matrix.max()}')
+    
+    # Mostra o mapa de calor da rotulação feita pelo algoritmo
+    show_colored_connected_components(labeled_matrix)
 
     # Elimina os componentes conexos na borda
     labeled_matrix_wo_edges = deletes_connected_componentes_on_edges(
@@ -232,6 +260,9 @@ def main(args):
     component_with_center_matrix = component_only_matrix_cp.copy()
     component_with_center_matrix[crow, ccol] = 0
     images_matrices_archive.append(component_with_center_matrix)
+    
+    # Melhora a visualização do centro de massa colocando uma cruz por cima do ponto
+    show_center_of_mass(component_with_center_matrix, crow, ccol)
 
     return imagepath, images_matrices_archive
 
